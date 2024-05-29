@@ -1,5 +1,4 @@
- 
-# Actix-Inertia
+ # Actix-Inertia
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jehadja/actix-inertia/blob/main/LICENSE)
 
@@ -37,32 +36,18 @@ serde_json = "1.0"
 Create a file `main.rs` with the following content:
 
 ```rust
-use actix_inertia::{Inertia, VersionMiddleware};
-use actix_web::{web, App, HttpRequest, HttpServer};
-
-#[derive(serde::Serialize)]
-struct Hello {
-    name: String,
-}
-
-async fn hello(req: HttpRequest) -> impl actix_web::Responder {
-    Inertia::new(
-        "Hello".to_string(),
-        Hello {
-            name: "world".to_string(),
-        },
-        req.uri().to_string(),
-    )
-    .into_response(&req)
-    .await
-}
+use actix_inertia::{ResponseFactory, VersionMiddleware, example_handler};
+use actix_web::{web, App, HttpServer};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    let response_factory = ResponseFactory::new();
+
+    HttpServer::new(move || {
         App::new()
-            .wrap(VersionMiddleware::new("1".to_string()))
-            .route("/hello", web::get().to(hello))
+            .app_data(web::Data::new(response_factory.clone()))
+            .wrap(VersionMiddleware::new("1.0".to_string()))
+            .route("/example", web::get().to(example_handler))
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -79,24 +64,20 @@ To use the version middleware, include it in your Actix app setup as shown above
 An example handler that uses Inertia:
 
 ```rust
-use actix_inertia::{Inertia, VersionMiddleware};
-use actix_web::{web, App, HttpRequest, HttpServer};
+use actix_inertia::{InertiaResponder, VersionMiddleware};
+use actix_web::{web, App, HttpRequest, HttpServer, Responder};
+use serde::Serialize;
 
-#[derive(serde::Serialize)]
+#[derive(Serialize)]
 struct ExampleProps {
     key: String,
 }
 
-async fn example_handler(req: HttpRequest) -> impl actix_web::Responder {
-    Inertia::new(
-        "ExampleComponent".to_string(),
-        ExampleProps {
-            key: "value".to_string(),
-        },
-        req.uri().to_string(),
-    )
-    .into_response(&req)
-    .await
+async fn example_handler(req: HttpRequest) -> impl Responder {
+    let props = ExampleProps {
+        key: "value".to_string(),
+    };
+    InertiaResponder::new("ExampleComponent", props).respond_to(&req)
 }
 
 #[actix_web::main]
