@@ -1,0 +1,26 @@
+workspace = { members = ["example"] }
+[package]
+name = "actix-inertia"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+homepage = "https://github.com/jehadja/actix-inertia"
+repository = "https://github.com/jehadja/actix-inertia"
+description = "Inertia.js for Rust"
+keywords = ["inertia", "web", "framework", "actix"]
+categories = ["web-programming"]
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+actix-web = "4"
+actix-service = "2.0.2"
+serde = { version = "1.0", features = ["derive"] }
+futures-util = "0"
+serde_json = "1.0"
+futures = "0"
+async-trait = "0.1"
+
+
+[dev-dependencies]
+actix-rt = "2"

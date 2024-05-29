@@ -1,0 +1,1 @@
+import './boot/inertia.js';
