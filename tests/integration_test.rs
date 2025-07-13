@@ -200,25 +200,41 @@ async fn test_the_asset_version_does_not_match() {
 #[actix_web::test]
 async fn test_the_component_exists_on_the_filesystem() {
     use std::fs;
-    use tempfile::tempdir;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::{env, path::PathBuf};
 
-    // create a temporary directory representing component storage
-    let dir = tempdir().unwrap();
-    let component_path = dir.path().join("ComponentName.vue");
+    // create a unique directory inside the system temp directory
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let dir: PathBuf = env::temp_dir().join(format!("component_exists_{unique}"));
+    fs::create_dir(&dir).unwrap();
+    let component_path = dir.join("ComponentName.vue");
 
     // simulate existing component template file
     fs::write(&component_path, "<template></template>").unwrap();
 
     assert!(component_path.exists());
+
+    fs::remove_dir_all(dir).unwrap();
 }
 
 #[actix_web::test]
 async fn test_the_component_does_not_exist_on_the_filesystem() {
-    use tempfile::tempdir;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::{env, path::PathBuf};
 
-    // create a temporary directory without the component file
-    let dir = tempdir().unwrap();
-    let component_path = dir.path().join("MissingComponent.vue");
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let dir: PathBuf = env::temp_dir().join(format!("component_missing_{unique}"));
+    fs::create_dir(&dir).unwrap();
+    let component_path = dir.join("MissingComponent.vue");
 
     assert!(!component_path.exists());
+
+    fs::remove_dir_all(dir).unwrap();
 }
