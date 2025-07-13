@@ -1,5 +1,5 @@
 use actix_web::{HttpRequest, HttpResponse, Responder};
-use futures_util::future::BoxFuture;
+use futures_util::future::LocalBoxFuture;
 use serde::Serialize;
 
 use crate::Inertia;
@@ -23,7 +23,7 @@ where
     T: Serialize + 'static,
 {
     type Body = actix_web::body::BoxBody;
-    type Future = BoxFuture<'static, HttpResponse<Self::Body>>;
+    type Future = LocalBoxFuture<'static, HttpResponse<Self::Body>>;
 
     fn respond_to(self, req: &HttpRequest) -> Self::Future {
         let req = req.clone();
