@@ -77,7 +77,9 @@ async fn example_handler(req: HttpRequest) -> impl Responder {
     let props = ExampleProps {
         key: "value".to_string(),
     };
-    InertiaResponder::new("ExampleComponent", props).respond_to(&req)
+    InertiaResponder::new("ExampleComponent", props)
+        .respond_to(&req)
+        .await
 }
 
 #[actix_web::main]
