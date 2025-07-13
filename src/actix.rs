@@ -27,6 +27,7 @@ pub struct HtmlResponseContext {
     data_page: String,
 }
 
+#[derive(Clone)]
 pub struct ResponseFactory {
     root_view: String,
     shared_props: Arc<Mutex<serde_json::Value>>,
