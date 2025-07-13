@@ -1,9 +1,10 @@
 use actix_inertia::{
     example_handler, ResponseFactory, VersionMiddleware, X_INERTIA, X_INERTIA_VERSION,
+    X_INERTIA_PARTIAL_COMPONENT, X_INERTIA_PARTIAL_ONLY, X_INERTIA_PARTIAL_EXCEPT,
 };
 extern crate serde_json;
 
-use actix_web::{http, test, web, App};
+use actix_web::{http, test, web, App, HttpRequest};
 use serde_json::Value;
 
 #[actix_web::test]
@@ -195,6 +196,82 @@ async fn test_the_asset_version_does_not_match() {
     let status = resp.status();
 
     assert_eq!(status, http::StatusCode::CONFLICT);
+}
+
+#[actix_web::test]
+async fn test_partial_reload_only_returns_requested_props() {
+    async fn handler(req: HttpRequest, data: web::Data<ResponseFactory>) -> impl actix_web::Responder {
+        let inertia = data.render(
+            "ComponentName",
+            serde_json::json!({"foo": 1, "bar": 2}),
+            req.uri().to_string().as_str(),
+        );
+        inertia.into_response(&req).await
+    }
+
+    let mut factory = ResponseFactory::new();
+    let app = test::init_service(
+        App::new()
+            .wrap(VersionMiddleware::new("example-version".to_string()))
+            .app_data(web::Data::new(factory.clone()))
+            .service(web::resource("/partial").to(handler)),
+    )
+    .await;
+
+    let req = test::TestRequest::get()
+        .uri("/partial")
+        .insert_header((X_INERTIA, "true"))
+        .insert_header((X_INERTIA_VERSION, "example-version"))
+        .insert_header((X_INERTIA_PARTIAL_COMPONENT, "ComponentName"))
+        .insert_header((X_INERTIA_PARTIAL_ONLY, "foo"))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+
+    let status = resp.status();
+    let body_bytes = test::read_body(resp).await;
+
+    assert_eq!(status, http::StatusCode::OK);
+    let body: Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert!(body["props"].get("foo").is_some());
+    assert!(body["props"].get("bar").is_none());
+}
+
+#[actix_web::test]
+async fn test_partial_reload_excludes_props() {
+    async fn handler(req: HttpRequest, data: web::Data<ResponseFactory>) -> impl actix_web::Responder {
+        let inertia = data.render(
+            "ComponentName",
+            serde_json::json!({"foo": 1, "bar": 2}),
+            req.uri().to_string().as_str(),
+        );
+        inertia.into_response(&req).await
+    }
+
+    let mut factory = ResponseFactory::new();
+    let app = test::init_service(
+        App::new()
+            .wrap(VersionMiddleware::new("example-version".to_string()))
+            .app_data(web::Data::new(factory.clone()))
+            .service(web::resource("/partial").to(handler)),
+    )
+    .await;
+
+    let req = test::TestRequest::get()
+        .uri("/partial")
+        .insert_header((X_INERTIA, "true"))
+        .insert_header((X_INERTIA_VERSION, "example-version"))
+        .insert_header((X_INERTIA_PARTIAL_COMPONENT, "ComponentName"))
+        .insert_header((X_INERTIA_PARTIAL_EXCEPT, "bar"))
+        .to_request();
+    let resp = test::call_service(&app, req).await;
+
+    let status = resp.status();
+    let body_bytes = test::read_body(resp).await;
+
+    assert_eq!(status, http::StatusCode::OK);
+    let body: Value = serde_json::from_slice(&body_bytes).unwrap();
+    assert!(body["props"].get("bar").is_none());
+    assert!(body["props"].get("foo").is_some());
 }
 
 #[actix_web::test]

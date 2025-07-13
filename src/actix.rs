@@ -126,9 +126,44 @@ impl<T: Serialize> Inertia<T> {
                 }
             });
 
+        let mut props_value = serde_json::to_value(self.props).unwrap_or_else(|_| serde_json::Value::Null);
+
+        if let serde_json::Value::Object(ref mut map) = props_value {
+            let partial_component = req
+                .headers()
+                .get(X_INERTIA_PARTIAL_COMPONENT)
+                .and_then(|v| v.to_str().ok());
+            let partial_only = req
+                .headers()
+                .get(X_INERTIA_PARTIAL_ONLY)
+                .and_then(|v| v.to_str().ok());
+            let partial_except = req
+                .headers()
+                .get(X_INERTIA_PARTIAL_EXCEPT)
+                .and_then(|v| v.to_str().ok());
+
+            let should_filter = match partial_component {
+                Some(comp) => comp == self.component,
+                None => partial_only.is_some() || partial_except.is_some(),
+            };
+
+            if should_filter {
+                if let Some(data) = partial_only {
+                    let keys: Vec<&str> = data.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+                    map.retain(|k, _| keys.iter().any(|key| key == &k.as_str()));
+                }
+
+                if let Some(excepts) = partial_except {
+                    for key in excepts.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+                        map.remove(key);
+                    }
+                }
+            }
+        }
+
         let inertia_response = InertiaResponse {
             component: self.component,
-            props: self.props,
+            props: props_value,
             url: self.url.unwrap_or_else(|| req.uri().to_string()),
             version,
         };
