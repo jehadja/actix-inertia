@@ -1,6 +1,7 @@
 use crate::{
-    Inertia, X_INERTIA, X_INERTIA_ERROR_BAG, X_INERTIA_LOCATION, X_INERTIA_PARTIAL_COMPONENT,
-    X_INERTIA_PARTIAL_EXCEPT, X_INERTIA_PARTIAL_ONLY, X_INERTIA_VERSION,
+    Inertia, ResponseFactory, X_INERTIA, X_INERTIA_ERROR_BAG, X_INERTIA_LOCATION,
+    X_INERTIA_PARTIAL_COMPONENT, X_INERTIA_PARTIAL_EXCEPT, X_INERTIA_PARTIAL_ONLY,
+    X_INERTIA_VERSION,
 };
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::body::EitherBody;
@@ -113,14 +114,22 @@ impl<T: Serialize> Inertia<T> {
     }
 
     pub async fn into_response(self, req: &HttpRequest) -> HttpResponse {
+        let version = req
+            .app_data::<web::Data<ResponseFactory>>()
+            .and_then(|factory| {
+                let v = factory.get_version();
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(v)
+                }
+            });
+
         let inertia_response = InertiaResponse {
             component: self.component,
             props: self.props,
             url: self.url.unwrap_or_else(|| req.uri().to_string()),
-            version: req
-                .headers()
-                .get(X_INERTIA_VERSION)
-                .map(|v| v.to_str().unwrap_or("").to_string()),
+            version,
         };
 
         if req.headers().contains_key(X_INERTIA) {
