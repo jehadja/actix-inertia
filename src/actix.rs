@@ -13,6 +13,7 @@ use futures::future::{ok, Ready};
 use futures_util::future::LocalBoxFuture;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
+use std::fs;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct InertiaResponse<T> {
@@ -45,6 +46,16 @@ impl ResponseFactory {
 
     pub fn set_root_view(&mut self, name: &str) {
         self.root_view = name.to_string();
+    }
+
+    pub fn render_root(&self, data_page: &str) -> Option<String> {
+        if let Ok(mut html) = fs::read_to_string(&self.root_view) {
+            let escaped = data_page.replace("\"", "&quot;");
+            html = html.replace("{{DATA_PAGE}}", &escaped);
+            Some(html)
+        } else {
+            None
+        }
     }
 
     pub fn share(&self, key: &str, value: serde_json::Value) {
@@ -207,8 +218,17 @@ impl<T: Serialize> Inertia<T> {
             let ctx = HtmlResponseContext {
                 data_page: serde_json::to_string(&inertia_response).unwrap(), // Handle error in real scenario
             };
+
+            if let Some(factory) = req.app_data::<web::Data<ResponseFactory>>() {
+                if let Some(html) = factory.render_root(&ctx.data_page) {
+                    return HttpResponse::Ok()
+                        .content_type("text/html; charset=utf-8")
+                        .body(html);
+                }
+            }
+
             HttpResponse::Ok()
-                .content_type("text/html; charset=utf-8")
+                .content_type("application/json")
                 .body(ctx.data_page)
         }
     }
