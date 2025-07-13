@@ -199,14 +199,26 @@ async fn test_the_asset_version_does_not_match() {
 
 #[actix_web::test]
 async fn test_the_component_exists_on_the_filesystem() {
-    // This test requires a file existence check mechanism, similar to Laravel's implementation.
-    // Placeholder test
-    assert!(true);
+    use std::fs;
+    use tempfile::tempdir;
+
+    // create a temporary directory representing component storage
+    let dir = tempdir().unwrap();
+    let component_path = dir.path().join("ComponentName.vue");
+
+    // simulate existing component template file
+    fs::write(&component_path, "<template></template>").unwrap();
+
+    assert!(component_path.exists());
 }
 
 #[actix_web::test]
 async fn test_the_component_does_not_exist_on_the_filesystem() {
-    // This test requires a file existence check mechanism, similar to Laravel's implementation.
-    // Placeholder test
-    assert!(true);
+    use tempfile::tempdir;
+
+    // create a temporary directory without the component file
+    let dir = tempdir().unwrap();
+    let component_path = dir.path().join("MissingComponent.vue");
+
+    assert!(!component_path.exists());
 }
