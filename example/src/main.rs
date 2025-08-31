@@ -14,7 +14,7 @@ async fn hello(req: HttpRequest) -> impl Responder {
         message: "this is my message from Rust :)".to_string(),
     };
     if req.headers().contains_key("x-inertia") {
-        InertiaResponder::new("Hello", props).respond_to(&req)
+        InertiaResponder::new("Hello", props).respond_to(&req).await
     } else {
         response_with_html(&req, props, "Hello".to_string())
     }
@@ -25,7 +25,7 @@ async fn world(req: HttpRequest) -> impl Responder {
         message: "this is my message from Rust :) sceond page".to_string(),
     };
     if req.headers().contains_key("x-inertia") {
-        InertiaResponder::new("World", props).respond_to(&req)
+        InertiaResponder::new("World", props).respond_to(&req).await
     } else {
         response_with_html(&req, props, "World".to_string())
     }
@@ -36,7 +36,9 @@ async fn version(req: HttpRequest) -> impl Responder {
         message: "this is my message from Rust :) with Version 1".to_string(),
     };
     if req.headers().contains_key("x-inertia") {
-        InertiaResponder::new("VersionPage", props).respond_to(&req)
+        InertiaResponder::new("VersionPage", props)
+            .respond_to(&req)
+            .await
     } else {
         response_with_html(&req, props, "VersionPage".to_string())
     }

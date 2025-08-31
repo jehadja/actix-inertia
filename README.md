@@ -64,7 +64,7 @@ To use the version middleware, include it in your Actix app setup as shown above
 An example handler that uses Inertia:
 
 ```rust
-use actix_inertia::{InertiaResponder, VersionMiddleware};
+use actix_inertia::{inertia_responder::InertiaResponder, VersionMiddleware};
 use actix_web::{web, App, HttpRequest, HttpServer, Responder};
 use serde::Serialize;
 
@@ -77,7 +77,7 @@ async fn example_handler(req: HttpRequest) -> impl Responder {
     let props = ExampleProps {
         key: "value".to_string(),
     };
-    InertiaResponder::new("ExampleComponent", props).respond_to(&req)
+    InertiaResponder::new("ExampleComponent", props).respond_to(&req).await
 }
 
 #[actix_web::main]
