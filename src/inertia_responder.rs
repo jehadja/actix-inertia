@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse};
 use serde::Serialize;
 
 use crate::Inertia;
@@ -15,16 +15,10 @@ impl<T: Serialize> InertiaResponder<T> {
             props,
         }
     }
-}
 
-impl<T: Serialize> Responder for InertiaResponder<T> {
-    type Body = actix_web::body::BoxBody;
-
-    fn respond_to(self, req: &HttpRequest) -> HttpResponse<Self::Body> {
+    pub async fn respond_to(self, req: &HttpRequest) -> HttpResponse {
         let inertia = Inertia::new(self.component, self.props, req.uri().to_string());
 
-        let response = futures::executor::block_on(async { inertia.into_response(req).await });
-
-        response
+        inertia.into_response(req).await
     }
 }
